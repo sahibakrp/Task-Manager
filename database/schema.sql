@@ -5,6 +5,10 @@ CREATE TABLE roles (
     name VARCHAR(50) NOT NULL
 );
 
+INSERT INTO roles (id, name) VALUES
+    (1, 'Admin'),
+    (2, 'User');
+
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
