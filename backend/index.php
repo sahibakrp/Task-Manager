@@ -3,6 +3,7 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/routes/tasks.php';
+require_once __DIR__ . '/routes/auth.php';
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
@@ -17,7 +18,12 @@ $uri = '/' . ltrim($uri, '/');
 $segments = array_values(array_filter(explode('/', trim($uri, '/'))));
 
 try {
-    $result = handleTaskRoutes($_SERVER['REQUEST_METHOD'], $segments);
+    // try auth routes first
+    $result = handleAuthRoutes($_SERVER['REQUEST_METHOD'], $segments);
+    if ($result['status'] === 404) {
+        $result = handleTaskRoutes($_SERVER['REQUEST_METHOD'], $segments);
+    }
+
     http_response_code($result['status']);
     echo json_encode($result['body']);
 } catch (InvalidArgumentException $e) {
