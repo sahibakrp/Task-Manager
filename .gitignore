@@ -1,0 +1,16 @@
+# PHP
+vendor/
+composer.lock
+
+# Node
+node_modules/
+build/
+/dist/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
