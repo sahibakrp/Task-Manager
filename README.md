@@ -43,6 +43,11 @@ Endpoints implemented in backend:
 - `POST /register` — register a new user. Body: `{name, email, password}`
 - `POST /login` — login and receive a JWT. Body: `{email, password}`
 - `POST /logout` — stateless logout (client discards token)
+- `GET /tasks` — list tasks for the current user
+- `GET /tasks/:id` — fetch a single task by id
+- `POST /tasks` — create a task for the current user
+- `PUT /tasks/:id` — update a task you own
+- `DELETE /tasks/:id` — delete a task you own
 
 JWT handling:
 - Tokens are signed using HMAC SHA-256. Configuration in `backend/config/jwt.php`.
@@ -74,3 +79,72 @@ Response:
 Protecting routes:
 - Include header `Authorization: Bearer <token>` on requests.
 - Use `backend/middleware/Auth.php` helper functions `jwt_decode()` and `get_bearer_token()` in controllers/middleware to validate tokens.
+
+
+
+# Task Manager Frontend
+
+This React frontend connects to the PHP backend at `http://localhost/Task-Manager/backend`.
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+2. Start the development server:
+
+```bash
+npm run dev
+```
+
+3. Open the frontend in your browser:
+
+```text
+http://localhost:5173/
+```
+
+## Default endpoints
+
+- React frontend: `http://localhost:5173/`
+- PHP backend API: `http://localhost/Task-Manager/backend`
+
+Do not use the automatically-displayed network addresses unless you specifically need another device on your network. Use `localhost` for the simplest setup.
+
+## Tailwind CSS
+
+This project is configured to use Tailwind CSS.
+
+- Installed packages: `tailwindcss`, `postcss`, `autoprefixer`
+- Tailwind config: `tailwind.config.js`
+- PostCSS config: `postcss.config.js`
+- CSS entry: `src/index.css`
+
+The `src` files are scanned for Tailwind classes from:
+
+```text
+./index.html
+./src/**/*.{js,jsx,ts,tsx}
+```
+
+You can now use utility classes in any React component, for example:
+
+```jsx
+<div className="min-h-screen bg-slate-50 text-slate-900">
+  ...
+</div>
+```
+
+## Notes
+
+- Login and register pages are available at `/login` and `/register`.
+- After login, the dashboard loads tasks from the backend.
+- The app stores JWT in `localStorage` and sends it in `Authorization: Bearer <token>` headers.
+- If your backend runs from a different host/port, set `VITE_API_BASE` in a `.env` file:
+
+```
+VITE_API_BASE=http://localhost/Task-Manager/backend
+```

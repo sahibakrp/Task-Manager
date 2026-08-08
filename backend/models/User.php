@@ -113,6 +113,25 @@ class User
         return $user ?: null;
     }
 
+    public static function listUsers(): array
+    {
+        $pdo = self::getConnection();
+        if ($pdo === null) {
+            $storage = self::readStorage();
+            return array_map(static fn ($user) => [
+                'id' => $user['id'],
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'role_id' => $user['role_id'],
+                'created_at' => $user['created_at'],
+            ], $storage['users']);
+        }
+
+        $stmt = $pdo->prepare('SELECT id, name, email, role_id, created_at FROM users ORDER BY created_at DESC');
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public static function findById(int $id): ?array
     {
         $pdo = self::getConnection();

@@ -57,10 +57,30 @@ function parseJsonPayload(): array
 
 function handleTaskRoutes(string $method, array $segments): array
 {
-    $currentUser = get_current_user();
+    $currentUser = getAuthenticatedUser();
 
     if ($method === 'GET' && count($segments) === 1 && $segments[0] === 'tasks') {
         return ['status' => 200, 'body' => TaskController::list($_GET, $currentUser)];
+    }
+
+    if ($method === 'GET' && count($segments) === 2 && $segments[0] === 'tasks') {
+        if ($currentUser === null) {
+            return ['status' => 401, 'body' => ['message' => 'Authentication required']];
+        }
+
+        $id = (int) $segments[1];
+        try {
+            $task = Task::findById($id);
+        } catch (RuntimeException $e) {
+            return ['status' => 404, 'body' => ['message' => 'Task not found']];
+        }
+
+        $isAdmin = isset($currentUser['role_id']) && (int) $currentUser['role_id'] === 1;
+        if (!$isAdmin && (int) ($task['user_id'] ?? 0) !== (int) $currentUser['sub']) {
+            return ['status' => 403, 'body' => ['message' => 'Forbidden']];
+        }
+
+        return ['status' => 200, 'body' => $task];
     }
 
     if ($method === 'POST' && count($segments) === 1 && $segments[0] === 'tasks') {
