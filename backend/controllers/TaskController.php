@@ -4,13 +4,22 @@ require_once __DIR__ . '/../models/Task.php';
 
 class TaskController
 {
-    public static function list(array $query): array
+    public static function list(array $query, ?array $currentUser = null): array
     {
         $status = isset($query['status']) ? trim((string) $query['status']) : null;
         $page = max(1, (int) ($query['page'] ?? 1));
         $limit = max(1, min(100, (int) ($query['limit'] ?? 10)));
 
-        return Task::listTasks($status, $page, $limit);
+        $userId = null;
+        if (is_array($currentUser) && isset($currentUser['sub'])) {
+            $userId = (int) $currentUser['sub'];
+            // if admin, don't filter by user
+            if (isset($currentUser['role_id']) && (int) $currentUser['role_id'] === 1) {
+                $userId = null;
+            }
+        }
+
+        return Task::listTasks($status, $page, $limit, $userId);
     }
 
     public static function create(array $payload): array

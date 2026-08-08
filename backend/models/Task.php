@@ -83,7 +83,7 @@ class Task
         return null;
     }
 
-    public static function listTasks(?string $status = null, int $page = 1, int $limit = 10): array
+    public static function listTasks(?string $status = null, int $page = 1, int $limit = 10, ?int $userId = null): array
     {
         $pdo = self::getConnection();
         if ($pdo === null) {
@@ -92,6 +92,10 @@ class Task
 
             if ($status !== null && $status !== '') {
                 $tasks = array_values(array_filter($tasks, static fn ($task) => ($task['status'] ?? 'todo') === $status));
+            }
+
+            if ($userId !== null) {
+                $tasks = array_values(array_filter($tasks, static fn ($task) => (int) ($task['user_id'] ?? 0) === $userId));
             }
 
             $total = count($tasks);
@@ -113,6 +117,11 @@ class Task
         if ($status !== null && $status !== '') {
             $where[] = 'status = :status';
             $params[':status'] = $status;
+        }
+
+        if ($userId !== null) {
+            $where[] = 'user_id = :user_id';
+            $params[':user_id'] = $userId;
         }
 
         $sql = 'SELECT * FROM tasks';

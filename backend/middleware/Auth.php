@@ -80,3 +80,18 @@ function get_bearer_token(): ?string
 
     return null;
 }
+
+function get_current_user(): ?array
+{
+    $token = get_bearer_token();
+    if ($token === null) {
+        return null;
+    }
+
+    $payload = jwt_decode($token);
+    if ($payload === null) {
+        return null;
+    }
+
+    return $payload;
+}

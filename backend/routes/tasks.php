@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../controllers/TaskController.php';
+require_once __DIR__ . '/../middleware/Auth.php';
+require_once __DIR__ . '/../models/Task.php';
 
 function parseJsonPayload(): array
 {
@@ -55,23 +57,73 @@ function parseJsonPayload(): array
 
 function handleTaskRoutes(string $method, array $segments): array
 {
+    $currentUser = get_current_user();
+
     if ($method === 'GET' && count($segments) === 1 && $segments[0] === 'tasks') {
-        return ['status' => 200, 'body' => TaskController::list($_GET)];
+        return ['status' => 200, 'body' => TaskController::list($_GET, $currentUser)];
     }
 
     if ($method === 'POST' && count($segments) === 1 && $segments[0] === 'tasks') {
+        if ($currentUser === null) {
+            return ['status' => 401, 'body' => ['message' => 'Authentication required']];
+        }
+
         $payload = parseJsonPayload();
+        // normal users: force owner to current user
+        if (!isset($currentUser['role_id']) || (int) $currentUser['role_id'] !== 1) {
+            $payload['user_id'] = (int) $currentUser['sub'];
+        } else {
+            // admin may set user_id; default to admin if not provided
+            $payload['user_id'] = isset($payload['user_id']) ? (int) $payload['user_id'] : (int) $currentUser['sub'];
+        }
+
         return ['status' => 201, 'body' => TaskController::create($payload)];
     }
 
     if ($method === 'PUT' && count($segments) === 2 && $segments[0] === 'tasks') {
+        if ($currentUser === null) {
+            return ['status' => 401, 'body' => ['message' => 'Authentication required']];
+        }
+
         $id = (int) $segments[1];
+        try {
+            $task = Task::findById($id);
+        } catch (RuntimeException $e) {
+            return ['status' => 404, 'body' => ['message' => 'Task not found']];
+        }
+
+        // allow if admin or owner
+        $isAdmin = isset($currentUser['role_id']) && (int) $currentUser['role_id'] === 1;
+        if (!$isAdmin && (int) ($task['user_id'] ?? 0) !== (int) $currentUser['sub']) {
+            return ['status' => 403, 'body' => ['message' => 'Forbidden']];
+        }
+
         $payload = parseJsonPayload();
+        // prevent non-admin changing owner
+        if (!$isAdmin && isset($payload['user_id'])) {
+            unset($payload['user_id']);
+        }
+
         return ['status' => 200, 'body' => TaskController::update($id, $payload)];
     }
 
     if ($method === 'DELETE' && count($segments) === 2 && $segments[0] === 'tasks') {
+        if ($currentUser === null) {
+            return ['status' => 401, 'body' => ['message' => 'Authentication required']];
+        }
+
         $id = (int) $segments[1];
+        try {
+            $task = Task::findById($id);
+        } catch (RuntimeException $e) {
+            return ['status' => 404, 'body' => ['message' => 'Task not found']];
+        }
+
+        $isAdmin = isset($currentUser['role_id']) && (int) $currentUser['role_id'] === 1;
+        if (!$isAdmin && (int) ($task['user_id'] ?? 0) !== (int) $currentUser['sub']) {
+            return ['status' => 403, 'body' => ['message' => 'Forbidden']];
+        }
+
         $deleted = TaskController::delete($id);
         return ['status' => ($deleted ? 200 : 404), 'body' => ['deleted' => $deleted]];
     }
