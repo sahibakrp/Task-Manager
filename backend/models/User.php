@@ -1,5 +1,7 @@
 <?php
 
+use App\Config\Database;
+
 class User
 {
     private static function getConnection(): ?PDO
@@ -10,22 +12,12 @@ class User
             return $pdo;
         }
 
-        $config = require __DIR__ . '/../config/db.php';
-        $dsn = "mysql:host={$config['host']};dbname={$config['dbname']};charset=utf8mb4";
-
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ];
-
         try {
-            $pdo = new PDO($dsn, $config['user'], $config['pass'], $options);
-        } catch (PDOException $e) {
+            $pdo = Database::getConnection();
+            return $pdo;
+        } catch (\Throwable $e) {
             return null;
         }
-
-        return $pdo;
     }
 
     private static function getStoragePath(): string
